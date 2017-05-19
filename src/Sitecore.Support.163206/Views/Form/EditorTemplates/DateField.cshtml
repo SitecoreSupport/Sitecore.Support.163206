@@ -1,0 +1,68 @@
+﻿@model Sitecore.Support.Forms.Mvc.Models.Fields.DateField
+
+@if (!Model.Visible)
+{
+    return;
+}
+
+
+<div class="@Model.CssClass field-border">
+
+    @if (Model.ShowLegend)
+    {
+        <label for="@Html.AttributeEncode(Model.Name)" class="@Model.CssClass field-title">@Html.Encode(Model.Title)</label>
+    }
+
+    <div class="@Model.CssClass field-panel">
+
+   <div class="@Model.CssClass field-content">
+            @Html.HiddenFor(x => Model.FieldId)
+
+            @Html.HiddenFor(x => Model.Value)
+            
+            @{
+                string id = @Html.IdFor(x => Model.Value).ToString();
+            }
+            <script type="text/javascript">
+                
+                if (typeof ($scw) === "undefined") {
+                    window.$scw = jQuery.noConflict(true);
+                }
+                $scw(function () {
+                  
+                    
+                    $scw("#@id").datebox();
+                });
+            </script>
+
+            @Html.Label(Model.DayTitle, new { @class = "field-datebox-title" })
+            @Html.Label(Model.MonthTitle, new { @class = "field-datebox-title" })
+            @Html.Label(Model.YearTitle, new { @class = "field-datebox-title" })
+			
+            @Html.DropDownListFor(x => x.Day, new SelectList(Model.Days, "Value", "Text", @Model.SitecorSupport.Day), new { @class = "field-datebox-content" })
+
+            @Html.DropDownListFor(x => x.Month, new SelectList(Model.Months, "Value", "Text", @Model.SitecorSupport.Month), new { @class = "field-datebox-content" })
+			
+            @Html.DropDownListFor(x => x.Year, new SelectList(Model.Years, "Value", "Text", @Model.SitecorSupport.Year), new { @class = "field-datebox-content" })
+
+        </div>
+
+        @Html.ValidationMessageFor(field => Model.Value, null, new { @class =  @Model.CssClass + " field-error", @style = "color:red" })
+
+        @if (!String.IsNullOrEmpty(Model.Information))
+        {
+            <span class="@Model.CssClass field-info">@Html.DisplayFor(x => Model.Information)</span>
+        }
+    </div>
+	
+    @if (Model.IsRequired)
+    { 
+        <span class="@Model.CssClass field-required">*</span> 
+    }
+
+</div>
+
+
+
+
+
