@@ -1,169 +1,214 @@
-﻿using Sitecore.Data.Items;
-using Sitecore.Form.Core.Configuration;
-using Sitecore.Forms.Core.Attributes;
-using Sitecore.Forms.Mvc.Data.TypeProviders;
-using Sitecore.Forms.Mvc.Models;
+﻿using Sitecore;
+using Sitecore.Forms.Mvc.Attributes;
+using Sitecore.Forms.Mvc.TypeConverters;
+using Sitecore.Forms.Mvc.ViewModels;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.ComponentModel.DataAnnotations;
 using System.Globalization;
-using System.Linq;
 using System.Web.Mvc;
 
-namespace Sitecore.Support.Forms.Mvc.Models.Fields
+
+namespace Sitecore.Support.Forms.Mvc.ViewModels.Fields
 {
-    public class DateField : FieldModel
+    public class DateField : ValuedFieldViewModel<string>
     {
-        public DateField(Item item) : base(item)
+      public object Day
+      {
+        get;
+        set;
+      }
+
+      public object Month
+      {
+        get;
+        set;
+      }
+
+      public object Year
+      {
+        get;
+        set;
+      }
+
+      public string DayTitle
+      {
+        get;
+        set;
+      }
+
+      public string MonthTitle
+      {
+        get;
+        set;
+      }
+
+      public string YearTitle
+      {
+        get;
+        set;
+      }
+
+      [DefaultValue("yyyy-MMMM-dd")]
+      public string DateFormat
+      {
+        get;
+        set;
+      }
+
+      public List<SelectListItem> Years
+      {
+        get;
+        private set;
+      }
+
+      public List<SelectListItem> Months
+      {
+        get;
+        private set;
+      }
+
+      public List<SelectListItem> Days
+      {
+        get;
+        private set;
+      }
+
+      [TypeConverter(typeof(IsoDateTimeConverter))]
+      public DateTime StartDate
+      {
+        get;
+        set;
+      }
+
+      [TypeConverter(typeof(IsoDateTimeConverter))]
+      public DateTime EndDate
+      {
+        get;
+        set;
+      }
+
+      [DateRangeValidation]
+      [ParameterName("SelectedDate")]
+      public override string Value
+      {
+        get
         {
-            this.Initialize();
+          return base.Value;
         }
-
-        private void InitDate(string marker)
+        set
         {
-            DateTime current = DateUtil.IsoDateToDateTime(this.Value.ToString());
-            char ch = marker.ToLower()[0];
-            switch (ch)
-            {
-                case 'd':
-                    this.InitDays(current);
-                    return;
-
-                case 'm':
-                    this.InitMonth(marker, current);
-                    return;
-            }
-            if (ch == 'y')
-            {
-                this.InitYears(marker, current);
-            }
+          base.Value = value;
+          OnValueUpdated();
         }
+      }
 
-        private void InitDays(DateTime current)
+      public override string ResultParameters => DateFormat;
+
+      protected void OnValueUpdated()
+      {
+        if (!string.IsNullOrEmpty(Value))
         {
-            this.Days.Clear();
-            for (int i = 1; i <= DateTime.DaysInMonth(current.Year, current.Month); i++)
-            {
-                SelectListItem item = new SelectListItem
-                {
-                    Selected = current.Day == i,
-                    Text = i.ToString(CultureInfo.InvariantCulture),
-                    Value = i.ToString(CultureInfo.InvariantCulture)
-                };
-                this.Days.Add(item);
-            }
+          DateTime dateTime = DateUtil.IsoDateToDateTime(Value);
+          Day = dateTime.Day;
+          Month = dateTime.Month;
+          Year = dateTime.Year;
         }
-
-        private void Initialize()
+        InitItems();
+      }
+    
+    public override void Initialize()
+      {
+        if (string.IsNullOrEmpty(DateFormat))
         {
-            this.DateFormat = "yyyy-MMMM-dd";
-            if (this.StartDate == DateTime.MinValue)
-            {
-                this.StartDate = DateUtil.IsoDateToDateTime("20000101T120000");
-            }
-            if (this.EndDate == DateTime.MinValue)
-            {
-                this.EndDate = DateTime.Now.AddYears(1).Date;
-            }
-            this.DayTitle = ResourceManager.Localize("DAY");
-            this.MonthTitle = ResourceManager.Localize("MONTH");
-            this.YearTitle = ResourceManager.Localize("YEAR");
-            this.Years = new List<SelectListItem>();
-            this.Months = new List<SelectListItem>();
-            this.Days = new List<SelectListItem>();
-            KeyValuePair<string, string> pair = base.ParametersDictionary.FirstOrDefault<KeyValuePair<string, string>>(x => x.Key.ToLower() == "selecteddate");
-            this.Value = ((pair.Key != null) && !string.IsNullOrEmpty(pair.Value)) ? pair.Value : DateUtil.ToIsoDate(DateTime.Now);
-            List<string> list = new List<string>(this.DateFormat.Split(new char[] { '-' }));
-            SitecorSupport = DateUtil.IsoDateToDateTime(Value.ToString());
-            list.Reverse();
-            list.ForEach(new Action<string>(this.InitDate));
+          DateFormat = "yyyy-MMMM-dd";
         }
-
-        private void InitMonth(string marker, DateTime current)
+        if (StartDate == DateTime.MinValue)
         {
-            DateTime time = new DateTime();
-            this.Months.Clear();
-            for (int i = 1; i <= 12; i++)
-            {
-                SelectListItem item = new SelectListItem
-                {
-                    Selected = current.Month == i,
-                    Text = string.Format("{0:" + marker + "}", time.AddMonths(i - 1)),
-                    Value = i.ToString(CultureInfo.InvariantCulture)
-                };
-                this.Months.Add(item);
-            }
+          StartDate = DateUtil.IsoDateToDateTime("20000101T120000");
         }
-
-        private void InitYears(string marker, DateTime current)
+        if (EndDate == DateTime.MinValue)
         {
-            DateTime time = new DateTime(this.StartDate.Year - 1, 1, 1);
-            this.Years.Clear();
-            for (int i = this.StartDate.Year; i <= this.EndDate.Year; i++)
-            {
-                time = time.AddYears(1);
-                SelectListItem item = new SelectListItem
-                {
-                    Text = string.Format("{0:" + marker + "}", time),
-                    Value = i.ToString(CultureInfo.InvariantCulture),
-                    Selected = current.Year == i
-                };
-                this.Years.Add(item);
-            }
+          EndDate = DateTime.Now.AddYears(1).Date;
         }
+        Years = new List<SelectListItem>();
+        Months = new List<SelectListItem>();
+        Days = new List<SelectListItem>();
+        InitItems();
+      }
 
-        protected override void OnValueUpdated()
+      private void InitItems()
+      {
+        List<string> list = new List<string>(DateFormat.Split('-'));
+        list.Reverse();
+        list.ForEach(InitDate);
+      }
+
+      private void InitDate(string marker)
+      {
+        DateTime? current = string.IsNullOrEmpty(Value) ? null : new DateTime?(DateUtil.IsoDateToDateTime(Value));
+        switch (marker.ToLower()[0])
         {
-            DateTime time = DateUtil.IsoDateToDateTime(this.Value.ToString());
-            //this.Day = time.Day;
-            //this.Month = time.Month;
-            //this.Year = time.Year;
+          case 'd':
+            InitDays(current);
+            break;
+          case 'm':
+            InitMonth(marker, current);
+            break;
+          case 'y':
+            InitYears(marker, current);
+            break;
         }
+      }
 
-        [DefaultValue("yyyy-MMMM-dd")]
-        public string DateFormat { get; set; }
-
-        public object Day { get; set; }
-
-        public List<SelectListItem> Days { get; private set; }
-
-        public string DayTitle { get; set; }
-
-        [Converter(typeof(IsoDateTimeConverter))]
-        public DateTime EndDate { get; set; }
-
-        public object Month { get; set; }
-
-        public List<SelectListItem> Months { get; private set; }
-
-        public string MonthTitle { get; set; }
-
-        public override string ResultParameters =>
-            this.DateFormat;
-
-        [Converter(typeof(IsoDateTimeConverter))]
-        public DateTime StartDate { get; set; }
-
-        [DateRangeValidation(), DataType(DataType.Date)]
-        public override object Value
+      private void InitYears(string marker, DateTime? current)
+      {
+        DateTime dateTime = new DateTime(StartDate.Year - 1, 1, 1);
+        Years.Clear();
+        for (int i = StartDate.Year; i <= EndDate.Year; i++)
         {
-            get
-            {
-                return base.Value;
-            }
-
-            set
-            {
-                base.Value = value;
-            }
+          dateTime = dateTime.AddYears(1);
+          SelectListItem item = new SelectListItem
+          {
+            Text = string.Format("{0:" + marker + "}", dateTime),
+            Value = i.ToString(CultureInfo.InvariantCulture),
+            Selected = (current.HasValue && current.Value.Year == i)
+          };
+          Years.Add(item);
         }
+      }
 
-        public object Year { get; set; }
+      private void InitDays(DateTime? current)
+      {
+        Days.Clear();
+        int num = current.HasValue ? DateTime.DaysInMonth(current.Value.Year, current.Value.Month) : 31;
+        for (int i = 1; i <= 31; i++)
+        {
+          if (i <= num)
+          {
+            Days.Add(new SelectListItem
+            {
+              Selected = (current.HasValue && current.Value.Day == i),
+              Text = i.ToString(CultureInfo.InvariantCulture),
+              Value = i.ToString(CultureInfo.InvariantCulture)
+            });
+          }
+        }
+      }
 
-        public List<SelectListItem> Years { get; private set; }
-
-        public string YearTitle { get; set; }
-        public DateTime SitecorSupport { get; set; }
+      private void InitMonth(string marker, DateTime? current)
+      {
+        DateTime dateTime = default(DateTime);
+        Months.Clear();
+        for (int i = 1; i <= 12; i++)
+        {
+          Months.Add(new SelectListItem
+          {
+            Selected = (current.HasValue && current.Value.Month == i),
+            Text = string.Format("{0:" + marker + "}", dateTime.AddMonths(i - 1)),
+            Value = i.ToString(CultureInfo.InvariantCulture)
+          });
+        }
+      }
     }
 }

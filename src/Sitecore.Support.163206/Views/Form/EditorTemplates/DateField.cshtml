@@ -1,68 +1,50 @@
-﻿@model Sitecore.Support.Forms.Mvc.Models.Fields.DateField
+﻿@using Sitecore.Forms.Mvc
+@using Sitecore.Forms.Mvc.Html
+@model Sitecore.Support.Forms.Mvc.ViewModels.Fields.DateField
 
-@if (!Model.Visible)
+@using (Html.BeginField())
 {
-    return;
-}
+    @Html.HiddenFor(x => Model.Value, new { @class = "wfmDatebox" })
 
 
-<div class="@Model.CssClass field-border">
-
-    @if (Model.ShowLegend)
+    var htmlAttributes = new RouteValueDictionary
     {
-        <label for="@Html.AttributeEncode(Model.Name)" class="@Model.CssClass field-title">@Html.Encode(Model.Title)</label>
-    }
+        { "class", "form-control" },
+        {Constants.Tracking, "false"}
+    };    
 
-    <div class="@Model.CssClass field-panel">
-
-   <div class="@Model.CssClass field-content">
-            @Html.HiddenFor(x => Model.FieldId)
-
-            @Html.HiddenFor(x => Model.Value)
-            
-            @{
-                string id = @Html.IdFor(x => Model.Value).ToString();
-            }
-            <script type="text/javascript">
-                
-                if (typeof ($scw) === "undefined") {
-                    window.$scw = jQuery.noConflict(true);
-                }
-                $scw(function () {
-                  
-                    
-                    $scw("#@id").datebox();
-                });
-            </script>
-
-            @Html.Label(Model.DayTitle, new { @class = "field-datebox-title" })
-            @Html.Label(Model.MonthTitle, new { @class = "field-datebox-title" })
-            @Html.Label(Model.YearTitle, new { @class = "field-datebox-title" })
-			
-            @Html.DropDownListFor(x => x.Day, new SelectList(Model.Days, "Value", "Text", @Model.SitecorSupport.Day), new { @class = "field-datebox-content" })
-
-            @Html.DropDownListFor(x => x.Month, new SelectList(Model.Months, "Value", "Text", @Model.SitecorSupport.Month), new { @class = "field-datebox-content" })
-			
-            @Html.DropDownListFor(x => x.Year, new SelectList(Model.Years, "Value", "Text", @Model.SitecorSupport.Year), new { @class = "field-datebox-content" })
-
+    <div class="row">
+        <div class="col-xs-4 col-sm-4 col-md-4 col-lg-4">
+            <div class="input-group" style="width:100%">
+                <div class="input-group-addon">@Model.DayTitle</div>
+                @Html.DropDownListFor(x => x.Day, Model.Days, htmlAttributes)
+            </div>
         </div>
-
-        @Html.ValidationMessageFor(field => Model.Value, null, new { @class =  @Model.CssClass + " field-error", @style = "color:red" })
-
-        @if (!String.IsNullOrEmpty(Model.Information))
-        {
-            <span class="@Model.CssClass field-info">@Html.DisplayFor(x => Model.Information)</span>
-        }
+        <div class="col-xs-4 col-sm-4 col-md-4 col-lg-4">
+            <div class="input-group" style="width:100%">
+                <div class="input-group-addon">@Model.MonthTitle</div>
+                @Html.DropDownListFor(x => x.Month, Model.Months, htmlAttributes)
+            </div>
+        </div>
+        <div class="col-xs-4 col-sm-4 col-md-4 col-lg-4">
+            <div class="input-group" style="width:100%">
+                <div class="input-group-addon">@Model.YearTitle</div>
+                @Html.DropDownListFor(x => x.Year, Model.Years, htmlAttributes)
+            </div>
+        </div>
     </div>
-	
-    @if (Model.IsRequired)
-    { 
-        <span class="@Model.CssClass field-required">*</span> 
-    }
 
-</div>
+    @Html.RenderScriptBlock(
+        @<script type="text/javascript">
+             if (typeof window.WffmFieldsData === 'undefined') {
+                 window.WffmFieldsData = {}
+             }
 
-
-
-
-
+             window.WffmFieldsData["@Html.IdFor(x => Model.Value)"] =
+             {
+                 dayId: "@Html.Id("Day")",
+                 monthId: "@Html.Id("Month")",
+                 yearId: "@Html.Id("Year")"
+             };
+         </script>)
+}
